@@ -15,20 +15,27 @@
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="1">
+    <item row="0" column="0">
+     <widget class="QPushButton" name="loadProject">
+      <property name="text">
+       <string>Загрузить проект</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
+     <widget class="QComboBox" name="comboBox"/>
+    </item>
+    <item row="0" column="2">
      <widget class="QPushButton" name="pushButton">
       <property name="text">
        <string>Do DQ</string>
       </property>
      </widget>
     </item>
-    <item row="0" column="2">
-     <widget class="QComboBox" name="comboBox"/>
-    </item>
-    <item row="0" column="0">
-     <widget class="QPushButton" name="loadProject">
+    <item row="1" column="0">
+     <widget class="QPushButton" name="drawPolygon">
       <property name="text">
-       <string>Загрузить проект</string>
+       <string>Рисовать участок</string>
       </property>
      </widget>
     </item>

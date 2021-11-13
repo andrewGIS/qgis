@@ -27,6 +27,7 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 # Initialize Qt resources from file resources.py
+from .mapTools.squareTool import SquareMapTool
 from .mapTools.firstTool import circleDrawerMapTool
 from qgis.core import QgsProject, QgsGeometry, QgsLayerTreeGroup, QgsCoordinateReferenceSystem, QgsLayerTreeLayer
 
@@ -81,6 +82,7 @@ class mySelectionNewDock:
         self.layers = []
         self.selectedLayer = None
         self.mapTool = circleDrawerMapTool(iface.mapCanvas())
+        self.rectangleDrawTool = SquareMapTool(iface.mapCanvas())
 
 
     # noinspection PyMethodMayBeStatic
@@ -253,6 +255,7 @@ class mySelectionNewDock:
             self.dockwidget.comboBox.currentIndexChanged.connect(self.onLayerChange)
             self.dockwidget.pushButton.clicked.connect(self.makeQuery)
             self.dockwidget.loadProject.clicked.connect(self.loadProject)
+            self.dockwidget.drawPolygon.clicked.connect(self.rectangle_draw)
             self.dockwidget.show()
 
     def onLayerChange(self, index):
@@ -313,6 +316,15 @@ class mySelectionNewDock:
             set_node_visibility(node, layer.visible_in_project)
 
             QgsProject().instance().layerTreeRoot().insertChildNode(idx, node)
+
+    def rectangle_draw(self):
+        # Инструмент
+        # set my cutomtool to qgis
+        if not self.rectangleDrawTool.isActive():
+            self.iface.mapCanvas().setMapTool(self.rectangleDrawTool)
+        else:
+            self.rectangleDrawTool.clearRubberBand()
+            self.iface.mapCanvas().unsetMapTool(self.rectangleDrawTool)
 
 
 
