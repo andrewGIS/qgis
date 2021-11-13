@@ -21,17 +21,21 @@
  *                                                                         *
  ***************************************************************************/
 """
+from typing import List
+
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 # Initialize Qt resources from file resources.py
-from .resources import *
-from qgis.core import QgsProject, QgsGeometry
-from qgis.gui import QgsMapTool, QgsRubberBand
+from .mapTools.firstTool import circleDrawerMapTool
+from qgis.core import QgsProject, QgsGeometry, QgsLayerTreeGroup, QgsCoordinateReferenceSystem, QgsLayerTreeLayer
+
 
 # Import the code for the DockWidget
 from .mySelectionNewDock_dockwidget import mySelectionNewDockDockWidget
 import os.path
+
+from .lib.layers_utils import LayerInfo, create_layer_from_gpkg, create_node, set_node_visibility, set_style
 
 
 class mySelectionNewDock:
@@ -76,6 +80,7 @@ class mySelectionNewDock:
         self.dockwidget = None
         self.layers = []
         self.selectedLayer = None
+        self.mapTool = circleDrawerMapTool(iface.mapCanvas())
 
 
     # noinspection PyMethodMayBeStatic
@@ -221,6 +226,7 @@ class mySelectionNewDock:
 
             print ("** STARTING mySelectionNewDock")
 
+
             # dockwidget may not exist if:
             #    first run of plugin
             #    removed on close (see self.onClosePlugin method)
@@ -233,10 +239,10 @@ class mySelectionNewDock:
 
             # show the dockwidget
             # TODO: fix to allow choice of dock location
-            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+            self.iface.addDockWidget(Qt.TopDockWidgetArea, self.dockwidget)
             self.layers = [lyr.name() for lyr in QgsProject.instance().mapLayers().values()]
 
-            self.selectedLayer = QgsProject.instance().mapLayersByName(self.layers[0])[0] # устанавливаем при запуске
+            #self.selectedLayer = QgsProject.instance().mapLayersByName(self.layers[0])[0]  # устанавливаем при запуске
 
             # добавление с ключом
             # for id, layer in QgsProject.instance().mapLayers().items():
@@ -246,6 +252,7 @@ class mySelectionNewDock:
             self.dockwidget.comboBox.addItems(self.layers)
             self.dockwidget.comboBox.currentIndexChanged.connect(self.onLayerChange)
             self.dockwidget.pushButton.clicked.connect(self.makeQuery)
+            self.dockwidget.loadProject.clicked.connect(self.loadProject)
             self.dockwidget.show()
 
     def onLayerChange(self, index):
@@ -276,89 +283,36 @@ class mySelectionNewDock:
 
         # Инструмент
         # set my cutom tool to qgis
-        self.mapTool = circleDrawerMapTool(self.iface.mapCanvas())
-        self.iface.mapCanvas().setMapTool(self.mapTool)
-
-
-# First a generic Map Tool
-class circleDrawerMapTool(QgsMapTool):
-    """Create cutom map tool
-    with custom click and move event
-
-    :param QgsMapTool: Basic qgis class
-    :type QgsMapTool: Basic qgis class
-    """
-
-    def __init__(self, canvas):
-        """Contstructor for custom class
-
-        :param canvas: map canvas for class
-        :type canvas: QgsMapCanvas
-        :param labelElement: where circle area is showing
-        :type labelElement: QLabel
-        """
-        QgsMapTool.__init__(self, canvas)
-        self.canvas = canvas
-
-        # custom attrs
-        self.rubberBand = QgsRubberBand(self.canvas, True)  # for graphic storing
-        self.circleCenterPoint = None
-
-        # Graphic appereance
-        self.rubberBand.setWidth(1)
-
-    def canvasPressEvent(self, event):
-        """Handle for move cursor
-        if circleCenterPoint is set clear graphic and reset circle
-        otherwise set clicked cursor coordinates
-
-        :param event: basic type from QGIS
-        :type event: QPoint?
-        """
-        if self.circleCenterPoint:
-            self.circleCenterPoint = None
-            self.clearRubberBand()
+        if not self.mapTool.isActive():
+            self.iface.mapCanvas().setMapTool(self.mapTool)
         else:
-            self.circleCenterPoint = self.toMapCoordinates(event.pos())
+            self.mapTool.clearRubberBand()
+            self.iface.mapCanvas().unsetMapTool(self.mapTool)
 
-    def canvasMoveEvent(self, event):
-        """Handler for move event
+    def loadProject(self):
 
-        :param event: basic type from QGIS
-        :type event: QPoint?
-        """
-        if self.circleCenterPoint:
-            # convert moved cursor point to point
-            # in geo-coordinates
-            movedPoint = self.toMapCoordinates(event.pos())
+        curFolder = os.path.dirname(os.path.abspath(__file__))
+        base_map_GPKG = os.path.join(curFolder, "data", "basemap.gpkg")
+        stylePath = os.path.join(curFolder, "style")
+        crs = QgsCoordinateReferenceSystem("EPSG:32640")
 
-            radius = self.circleCenterPoint.distance(movedPoint)
+        # Список слоев для проекта.
+        # источник (GeoPackage), слой в источнике, имя в проекте, стиль, видимость слоя, имя группы
+        layers_info: List[LayerInfo] = [
+            LayerInfo(base_map_GPKG, "boundary", "Граница МО", "boundary.qml", True),
+            LayerInfo(base_map_GPKG, "pk_boundary", "Граница ПК", "pk_boundary.qml", False),
+        ]
 
-            # clear QgsBand for drawing new circle
-            self.rubberBand.reset()  # False = not a polygon
+        QgsProject.instance().setCrs(crs)
 
-            circleGeometry = QgsGeometry.fromPointXY(
-                self.circleCenterPoint).buffer(radius, 50)
+        for idx, layer in enumerate(layers_info):
+            layerToAdd = create_layer_from_gpkg(base_map_GPKG, layer.src_layer, layer.node_name, crs)
+            set_style(layerToAdd, layer.style, stylePath)
+            QgsProject().instance().addMapLayer(layerToAdd, False)
+            node: QgsLayerTreeLayer = QgsLayerTreeLayer(layerToAdd)
+            set_node_visibility(node, layer.visible_in_project)
 
-            # Show area of circle in text element
-            #print(circleGeometry.area())
+            QgsProject().instance().layerTreeRoot().insertChildNode(idx, node)
 
-            # Display geometry of circle
-            self.rubberBand.setToGeometry(
-                circleGeometry, None)
 
-    def canvasReleaseEvent(self, event):
 
-        """
-        Событие клика на canvas
-        """
-        print(self.toMapCoordinates(event.pos()))
-        radius = self.circleCenterPoint.distance(self.toMapCoordinates(event.pos()))
-        circleGeometry = QgsGeometry.fromPointXY(
-            self.circleCenterPoint).buffer(radius, 50)
-        print(circleGeometry.area())
-
-    def clearRubberBand(self):
-        """Clear all drawed graphics
-        """
-        self.rubberBand.reset()
