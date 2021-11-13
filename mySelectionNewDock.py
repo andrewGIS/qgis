@@ -29,7 +29,6 @@ from .resources import *
 from qgis.core import QgsProject, QgsGeometry
 from qgis.gui import QgsMapTool, QgsRubberBand
 
-
 # Import the code for the DockWidget
 from .mySelectionNewDock_dockwidget import mySelectionNewDockDockWidget
 import os.path
@@ -342,11 +341,22 @@ class circleDrawerMapTool(QgsMapTool):
                 self.circleCenterPoint).buffer(radius, 50)
 
             # Show area of circle in text element
-            print(circleGeometry.area())
+            #print(circleGeometry.area())
 
             # Display geometry of circle
             self.rubberBand.setToGeometry(
                 circleGeometry, None)
+
+    def canvasReleaseEvent(self, event):
+
+        """
+        Событие клика на canvas
+        """
+        print(self.toMapCoordinates(event.pos()))
+        radius = self.circleCenterPoint.distance(self.toMapCoordinates(event.pos()))
+        circleGeometry = QgsGeometry.fromPointXY(
+            self.circleCenterPoint).buffer(radius, 50)
+        print(circleGeometry.area())
 
     def clearRubberBand(self):
         """Clear all drawed graphics
