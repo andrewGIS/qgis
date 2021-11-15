@@ -23,6 +23,7 @@
 """
 from typing import List
 
+from PyQt5.QtWidgets import QMessageBox
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
@@ -37,6 +38,7 @@ from .mySelectionNewDock_dockwidget import mySelectionNewDockDockWidget
 import os.path
 
 from .lib.layers_utils import LayerInfo, create_layer_from_gpkg, create_node, set_node_visibility, set_style
+from .lib.checker import Checker
 
 
 class mySelectionNewDock:
@@ -256,6 +258,7 @@ class mySelectionNewDock:
             self.dockwidget.pushButton.clicked.connect(self.makeQuery)
             self.dockwidget.loadProject.clicked.connect(self.loadProject)
             self.dockwidget.drawPolygon.clicked.connect(self.rectangle_draw)
+            self.dockwidget.checkParcel.clicked.connect(self.polygon_checker)
             self.dockwidget.show()
 
     def onLayerChange(self, index):
@@ -319,12 +322,21 @@ class mySelectionNewDock:
 
     def rectangle_draw(self):
         # Инструмент
-        # set my cutomtool to qgis
+        # set my custom tool to qgis
         if not self.rectangleDrawTool.isActive():
             self.iface.mapCanvas().setMapTool(self.rectangleDrawTool)
         else:
             self.rectangleDrawTool.clearRubberBand()
             self.iface.mapCanvas().unsetMapTool(self.rectangleDrawTool)
 
+    def polygon_checker(self):
+        checker = Checker()
+        if self.rectangleDrawTool.geometry:
+            checker.check_geometry(self.rectangleDrawTool.geometry)
+            QMessageBox.information(self.iface.mainWindow(), "Сообщение",
+                                 u"Участок проверен")
+        else:
+            QMessageBox.critical(self.iface.mainWindow(), "Сообщение",
+                                 u"Не установлена геометрия")
 
 
