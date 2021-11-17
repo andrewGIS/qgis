@@ -10,7 +10,7 @@ from qgis.core import (
 )
 
 
-class LayerInfo(object):
+class LayerInfo:
     def __init__(self, src, src_layer, node_name, style, visible_in_project):
         self.src: str = src
         self.src_layer: str = src_layer

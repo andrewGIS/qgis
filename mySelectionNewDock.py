@@ -30,7 +30,7 @@ from qgis.PyQt.QtWidgets import QAction
 # Initialize Qt resources from file resources.py
 from .mapTools.squareTool import SquareMapTool
 from .mapTools.firstTool import circleDrawerMapTool
-from qgis.core import QgsProject, QgsGeometry, QgsLayerTreeGroup, QgsCoordinateReferenceSystem, QgsLayerTreeLayer
+from qgis.core import QgsProject, QgsGeometry, QgsLayerTreeGroup, QgsCoordinateReferenceSystem, QgsLayerTreeLayer, QgsEditFormConfig
 
 
 # Import the code for the DockWidget
@@ -318,7 +318,22 @@ class mySelectionNewDock:
             node: QgsLayerTreeLayer = QgsLayerTreeLayer(layerToAdd)
             set_node_visibility(node, layer.visible_in_project)
 
+            if layer.src_layer == "boundary":
+                formConfig: QgsEditFormConfig = layerToAdd.editFormConfig()
+                formPath = os.path.join(curFolder, "editForms", "boundary.ui")
+                formConfig.setUiForm(formPath)
+
+                formConfig.setInitCodeSource(QgsEditFormConfig.CodeSourceFile)
+                formConfig.setInitFilePath(os.path.join(curFolder, "editForms", "boundary.py"))
+                formConfig.setInitFunction("open")
+                layerToAdd.setEditFormConfig(formConfig)
+
+
             QgsProject().instance().layerTreeRoot().insertChildNode(idx, node)
+
+
+
+
 
     def rectangle_draw(self):
         # Инструмент
