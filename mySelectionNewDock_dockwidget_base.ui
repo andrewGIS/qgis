@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>466</width>
+    <width>655</width>
     <height>141</height>
    </rect>
   </property>
@@ -43,6 +43,13 @@
      <widget class="QPushButton" name="checkParcel">
       <property name="text">
        <string>Проверить участок</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="3">
+     <widget class="QPushButton" name="simpleExport">
+      <property name="text">
+       <string>Сохранить карту</string>
       </property>
      </widget>
     </item>

@@ -39,6 +39,7 @@ import os.path
 
 from .lib.layers_utils import LayerInfo, create_layer_from_gpkg, create_node, set_node_visibility, set_style
 from .lib.checker import Checker
+from .lib.export import simple_export, simple_export_with_layout, export_with_predefined_layout
 
 
 class mySelectionNewDock:
@@ -259,6 +260,7 @@ class mySelectionNewDock:
             self.dockwidget.loadProject.clicked.connect(self.loadProject)
             self.dockwidget.drawPolygon.clicked.connect(self.rectangle_draw)
             self.dockwidget.checkParcel.clicked.connect(self.polygon_checker)
+            self.dockwidget.simpleExport.clicked.connect(self.simple_print)
             self.dockwidget.show()
 
     def onLayerChange(self, index):
@@ -331,10 +333,6 @@ class mySelectionNewDock:
 
             QgsProject().instance().layerTreeRoot().insertChildNode(idx, node)
 
-
-
-
-
     def rectangle_draw(self):
         # Инструмент
         # set my custom tool to qgis
@@ -353,5 +351,11 @@ class mySelectionNewDock:
         else:
             QMessageBox.critical(self.iface.mainWindow(), "Сообщение",
                                  u"Не установлена геометрия")
+
+    def simple_print(self):
+        # simple_export(self.iface.activeLayer())
+        # simple_export_with_layout(self.iface)
+        export_with_predefined_layout(self.iface)
+
 
 
